@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSV Diagnóstico - Algoritmo Interactivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen p-4 md:p-8">
+
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- El contenido se genera vía JavaScript -->
+    </div>
+
+    <script>
+        const algorithm = {
+            inicio: {
+                question: "¿La taquicardia es Regular o Irregular?",
+                options: [
+                    { label: "Regular", next: "regular_p_presente" },
+                    { label: "Irregular", next: "irregular_p_presente" }
+                ]
+            },
+            irregular_p_presente: {
+                question: "¿Hay onda P presente?",
+                options: [
+                    { label: "No", next: "irregular_serrucho" },
+                    { label: "Sí", next: "irregular_morfologias" }
+                ]
+            },
+            irregular_serrucho: {
+                question: "¿Ondas en serrucho?",
+                options: [
+                    { label: "Sí", diagnosis: "AA (Flutter Auricular)" },
+                    { label: "No", diagnosis: "FA (Fibrilación Auricular)" }
+                ]
+            },
+            irregular_morfologias: {
+                question: "¿3 o más morfologías de onda P?",
+                options: [
+                    { label: "Sí", diagnosis: "TAM (Taquicardia Auricular Multifocal)" },
+                    { label: "No", next: "irregular_disociacion" }
+                ]
+            },
+            irregular_disociacion: {
+                question: "¿Existe disociación AV?",
+                options: [
+                    { label: "Sí", diagnosis: "JET (Taquicardia Ectópica de la Unión)" },
+                    { label: "No", diagnosis: "TA (Taquicardia Auricular)" }
+                ]
+            },
+            regular_p_presente: {
+                question: "¿Hay onda P presente?",
+                options: [
+                    { label: "No", next: "regular_no_p_maniobras" },
+                    { label: "Sí", next: "regular_av_2_1" }
+                ]
+            },
+            regular_no_p_maniobras: {
+                question: "Diagnóstico inicial sugerido:<br>1° TRIN típica<br>2° JET<br><br>Realizar Maniobras Vagales o Adenosina. ¿Qué respuesta se obtuvo?",
+                options: [
+                    { label: "Termina la taquicardia", diagnosis: "TRIN típica" },
+                    { label: "Disociación AV o Fenómeno de Wenckebach", next: "regular_no_p_va" }
+                ]
+            },
+            regular_no_p_va: {
+                question: "Evaluar la relación entre Ventrículos (V) y Aurículas (A):",
+                options: [
+                    { label: "V > A", diagnosis: "JET (Taquicardia Ectópica de la Unión)" },
+                    { label: "A > V", diagnosis: "TA (Taquicardia Auricular con PR largo)" }
+                ]
+            },
+            regular_av_2_1: {
+                question: "¿La relación de conducción AV es 2:1?",
+                options: [
+                    { label: "Sí", next: "regular_2_1_inf" },
+                    { label: "No (Relación 1:1)", next: "regular_rp_pr" }
+                ]
+            },
+            regular_2_1_inf: {
+                question: "¿La onda P es negativa en cara inferior (DII, DIII, aVF)?",
+                options: [
+                    { label: "No", diagnosis: "TA (Taquicardia Auricular)" },
+                    { label: "Sí", next: "regular_2_1_adenosina" }
+                ]
+            },
+            regular_2_1_adenosina: {
+                question: "Diagnóstico diferencial Taquicardia/Aleteo Auricular o TRIN típica. Evaluar respuesta a Maniobras Vagales / Adenosina:",
+                options: [
+                    { label: "Termina la taquicardia", diagnosis: "1° TRIN típica<br>2° TA Adenosina Sensible" },
+                    { label: "Disociación AV o Fenómeno de Wenckebach", next: "regular_2_1_serrucho" }
+                ]
+            },
+            regular_2_1_serrucho: {
+                question: "¿Se observan ondas en serrucho al bloquear el nodo AV?",
+                options: [
+                    { label: "Sí", diagnosis: "AA (Flutter Auricular)" },
+                    { label: "No", diagnosis: "TA (Taquicardia Auricular)" }
+                ]
+            },
+            regular_rp_pr: {
+                question: "¿El intervalo RP es menor que el PR?",
+                options: [
+                    { label: "Sí (RP Corto)", next: "regular_rp_80" },
+                    { label: "No (RP Largo)", next: "regular_rp_largo_adenosina" }
+                ]
+            },
+            regular_rp_80: {
+                question: "¿El intervalo RP es < 80 ms?",
+                options: [
+                    { label: "Sí", next: "regular_no_p_maniobras" },
+                    { label: "No (> 80 ms)", next: "regular_trav_adenosina" }
+                ]
+            },
+            regular_trav_adenosina: {
+                question: "Posible TRAV o TA con PR prolongado. Evaluar respuesta a Adenosina:",
+                options: [
+                    { label: "Termina la taquicardia", diagnosis: "TRAV (Taquicardia Reentrada AV)" },
+                    { label: "Persiste actividad auricular (Wenckebach/Disociación)", diagnosis: "TA con PR prolongado" }
+                ]
+            },
+            regular_rp_largo_adenosina: {
+                question: "Posible PJRT / TRIN atípica / TA. Evaluar respuesta a Adenosina:",
+                options: [
+                    { label: "Termina la taquicardia", diagnosis: "PJRT o TRIN Atípica" },
+                    { label: "Persiste actividad auricular", diagnosis: "TA (Taquicardia Auricular)" }
+                ]
+            }
+        };
+
+        let currentStep = 'inicio';
+        let history = [];
+
+        function render() {
+            const app = document.getElementById('app');
+            const stepData = algorithm[currentStep];
+            const isDiagnosis = typeof currentStep === 'object' && currentStep.type === 'diagnosis';
+
+            let content = `
+                <header class="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 class="text-2xl font-black text-gray-900 tracking-tight">TSV<span class="text-blue-600">Diagnóstico</span></h1>
+                        <p class="text-sm text-gray-500 font-medium italic">QRS Estrecho (&lt; 120ms)</p>
+                    </div>
+                    <div class="flex gap-2">
+                        ${history.length > 0 ? `<button onclick="handleBack()" class="p-3 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>` : ''}
+                        <button onclick="handleReset()" class="p-3 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"><i data-lucide="refresh-ccw" class="w-5 h-5"></i></button>
+                    </div>
+                </header>
+
+                <main class="bg-white rounded-[2rem] shadow-2xl shadow-blue-900/5 border border-gray-100 p-8 md:p-12 relative overflow-hidden fade-in">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-16 -mt-16 opacity-50"></div>
+            `;
+
+            if (isDiagnosis) {
+                content += `
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                            <i data-lucide="activity" class="w-10 h-10 text-blue-600"></i>
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-500 mb-2 uppercase tracking-wider">Diagnóstico Sugerido</h2>
+                        <div class="bg-blue-600 text-white text-2xl md:text-3xl font-bold p-8 rounded-2xl shadow-xl text-center mb-8 w-full leading-relaxed">
+                            ${currentStep.value}
+                        </div>
+                        <button onclick="handleReset()" class="flex items-center gap-2 bg-gray-800 text-white px-8 py-4 rounded-xl font-semibold hover:bg-gray-700 transition-all shadow-lg active:scale-95">
+                            <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Nuevo Análisis
+                        </button>
+                    </div>
+                `;
+            } else {
+                content += `
+                    <div class="mb-8">
+                        <div class="flex items-center gap-2 text-blue-600 mb-2">
+                            <i data-lucide="info" class="w-4 h-4"></i>
+                            <span class="text-xs font-bold uppercase tracking-widest">Paso ${history.length + 1}</span>
+                        </div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">${stepData.question}</h2>
+                    </div>
+                    <div class="grid gap-4">
+                        ${stepData.options.map((opt, i) => `
+                            <button onclick="handleOptionClick(${i})" class="group flex items-center justify-between p-6 bg-white border-2 border-gray-100 rounded-2xl text-left hover:border-blue-500 hover:bg-blue-50 transition-all shadow-sm active:scale-[0.99]">
+                                <span class="text-lg font-medium text-gray-700 group-hover:text-blue-700">${opt.label}</span>
+                                <i data-lucide="chevron-right" class="w-6 h-6 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            content += `
+                </main>
+                <footer class="mt-12 text-center max-w-md mx-auto">
+                    <p class="text-[10px] text-gray-400 font-medium tracking-wide leading-relaxed uppercase">
+                        Esta herramienta es exclusivamente para apoyo académico y formación médica. No sustituye el juicio de un profesional de la salud.
+                    </p>
+                </footer>
+            `;
+
+            app.innerHTML = content;
+            lucide.createIcons();
+        }
+
+        function handleOptionClick(index) {
+            const currentStepData = algorithm[currentStep];
+            if (!currentStepData) return;
+            
+            const option = currentStepData.options[index];
+            history.push(currentStep);
+            
+            if (option.diagnosis) {
+                currentStep = { type: 'diagnosis', value: option.diagnosis };
+            } else {
+                currentStep = option.next;
+            }
+            render();
+        }
+
+        function handleBack() {
+            if (history.length > 0) {
+                currentStep = history.pop();
+                render();
+            }
+        }
+
+        function handleReset() {
+            currentStep = 'inicio';
+            history = [];
+            render();
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>
