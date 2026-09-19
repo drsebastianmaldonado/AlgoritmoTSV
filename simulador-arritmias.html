@@ -3322,10 +3322,17 @@
     dt = Math.min(dt, 0.05);
     lastTs = ts;
 
-    acc += SPEED_PX_PER_SEC*dt;
-    while(acc>=1){
-      advanceOneSample();
-      acc -= 1;
+    // While the 12-lead ECG panel is open (in Simulador, via its own toggle button, or throughout
+    // Modo ejercicio, where it's the only thing shown), the whole monitor freezes exactly where it
+    // was the instant it opened — main sweep, pressure trace and HR readout included — instead of
+    // the live telemetry running on behind a supposedly-static capture. simTime simply stops
+    // advancing here and picks back up from the same instant once the panel closes again.
+    if(!ecg12Visible){
+      acc += SPEED_PX_PER_SEC*dt;
+      while(acc>=1){
+        advanceOneSample();
+        acc -= 1;
+      }
     }
 
     draw();
